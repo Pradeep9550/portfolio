@@ -6,10 +6,10 @@ import ThreeGlobe from "three-globe";
 import { Canvas, extend } from "@react-three/fiber";
 import countries from "@/data/globe.json";
 
-
+// Fixing circular type reference by using `any`
 declare module "@react-three/fiber" {
   interface ThreeElements {
-    threeGlobe: JSX.IntrinsicElements["mesh"]; 
+    threeGlobe: any; // changed from JSX.IntrinsicElements["mesh"]
   }
 }
 
@@ -19,15 +19,7 @@ const RING_PROPAGATION_SPEED = 3;
 const aspect = 1.2;
 const cameraZ = 300;
 
-type Position = {
-  order: number;
-  startLat: number;
-  startLng: number;
-  endLat: number;
-  endLng: number;
-  arcAlt: number;
-  color: string;
-};
+type Position = { order: number; startLat: number; startLng: number; endLat: number; endLng: number; arcAlt: number; color: string; };
 
 export type GlobeConfig = {
   pointSize?: number;
@@ -55,29 +47,26 @@ export const Globe = ({
   globeConfig?: GlobeConfig;
 }) => {
   const globeRef = useRef<ThreeGlobe>(null);
-  const camera = useRef<PerspectiveCamera>(new PerspectiveCamera(75, aspect, 1, 1000));
+  const camera = useRef(new PerspectiveCamera(75, aspect, 1, 1000));
 
-  const defaultProps = useMemo(
-    () => ({
-      pointSize: 1,
-      atmosphereColor: "#ffffff",
-      showAtmosphere: true,
-      atmosphereAltitude: 0.1,
-      polygonColor: "rgba(255,255,255,0.7)",
-      globeColor: "#1d072e",
-      emissive: "#000000",
-      emissiveIntensity: 0.1,
-      shininess: 0.9,
-      arcTime: 2000,
-      arcLength: 0.9,
-      rings: 1,
-      maxRings: 3,
-      ringSpeed: 1,
-      ringPropagationSpeed: RING_PROPAGATION_SPEED,
-      ...globeConfig,
-    }),
-    [globeConfig]
-  );
+  const defaultProps = useMemo(() => ({
+    pointSize: 1,
+    atmosphereColor: "#fff",
+    showAtmosphere: true,
+    atmosphereAltitude: 0.1,
+    polygonColor: "rgba(255,255,255,0.7)",
+    globeColor: "#1d072e",
+    emissive: "#000",
+    emissiveIntensity: 0.1,
+    shininess: 0.9,
+    arcTime: 2000,
+    arcLength: 0.9,
+    rings: 1,
+    maxRings: 3,
+    ringSpeed: 1,
+    ringPropagationSpeed: RING_PROPAGATION_SPEED,
+    ...globeConfig,
+  }), [globeConfig]);
 
   useEffect(() => {
     camera.current.position.z = cameraZ;
@@ -86,7 +75,6 @@ export const Globe = ({
 
   useEffect(() => {
     if (!globeRef.current) return;
-
     globeRef.current.globeMaterial.color = new Color(defaultProps.globeColor!);
     globeRef.current.globeMaterial.emissive = new Color(defaultProps.emissive!);
     globeRef.current.globeMaterial.emissiveIntensity = defaultProps.emissiveIntensity!;
@@ -122,9 +110,7 @@ export const Globe = ({
       camera={camera.current}
       style={{ width: "100%", height: "100%" }}
       gl={{ antialias: true }}
-      onCreated={({ gl }) => {
-        gl.setClearColor(new Color(defaultProps.globeColor!));
-      }}
+      onCreated={({ gl }) => gl.setClearColor(new Color(defaultProps.globeColor!))}
     >
       <ambientLight intensity={0.5} />
       <pointLight position={[10, 10, 10]} intensity={0.8} />
