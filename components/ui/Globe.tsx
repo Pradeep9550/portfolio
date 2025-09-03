@@ -58,7 +58,7 @@ interface WorldProps {
   data: Position[];
 }
 
-let numbersOfRings = [0];
+const numbersOfRings = [0];
 
 export function Globe({ globeConfig, data }: WorldProps) {
   const [globeData, setGlobeData] = useState<
@@ -115,7 +115,7 @@ export function Globe({ globeConfig, data }: WorldProps) {
 
   const _buildData = () => {
     const arcs = data;
-    let points = [];
+    const points = [];
     for (let i = 0; i < arcs.length; i++) {
       const arc = arcs[i];
       const rgb = hexToRgb(arc.color) as { r: number; g: number; b: number };
