@@ -1,22 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback, useMemo } from "react";
-import {
-  Color,
-  Scene,
-  Fog,
-  PerspectiveCamera,
-  Vector3,
-} from "three";
+import React, { useEffect, useRef, useMemo } from "react";
+import { Color, PerspectiveCamera, Vector3 } from "three";
 import ThreeGlobe from "three-globe";
-import { useThree, Object3DNode, Canvas, extend } from "@react-three/fiber";
-import { OrbitControls } from "@react-three/drei";
+import { Canvas, extend } from "@react-three/fiber";
 import countries from "@/data/globe.json";
 
-// Extend Three.js with ThreeGlobe for R3F
+// Extend ThreeGlobe for R3F
 declare module "@react-three/fiber" {
   interface ThreeElements {
-    threeGlobe: Object3DNode<ThreeGlobe, typeof ThreeGlobe>;
+    threeGlobe: React.ElementType;
   }
 }
 extend({ ThreeGlobe });
@@ -56,19 +49,14 @@ export type GlobeConfig = {
 export const Globe = ({
   positions,
   globeConfig = {},
-  showGrid = true,
+  // Removed unused prop showGrid
 }: {
   positions: Position[];
   globeConfig?: GlobeConfig;
-  showGrid?: boolean;
 }) => {
   const globeRef = useRef<ThreeGlobe>(null);
-  const scene = useRef<Scene>(new Scene());
-  const camera = useRef<PerspectiveCamera>(
-    new PerspectiveCamera(75, aspect, 1, 1000)
-  );
+  const camera = useRef<PerspectiveCamera>(new PerspectiveCamera(75, aspect, 1, 1000));
 
-  // Memoize default props to avoid triggering effects on every render
   const defaultProps = useMemo(() => ({
     pointSize: 1,
     atmosphereColor: "#ffffff",
@@ -88,13 +76,11 @@ export const Globe = ({
     ...globeConfig,
   }), [globeConfig]);
 
-  // Setup Three.js camera and scene
   useEffect(() => {
     camera.current.position.z = cameraZ;
     camera.current.lookAt(new Vector3(0, 0, 0));
   }, []);
 
-  // Setup globe material and colors
   useEffect(() => {
     if (!globeRef.current) return;
 
@@ -107,14 +93,12 @@ export const Globe = ({
     globeRef.current.showAtmosphere = defaultProps.showAtmosphere!;
   }, [defaultProps]);
 
-  // Setup polygons
   useEffect(() => {
     if (!globeRef.current) return;
     globeRef.current.polygonsData(countries.features);
     globeRef.current.polygonCapColor(() => defaultProps.polygonColor!);
   }, [defaultProps.polygonColor]);
 
-  // Setup arcs and rings animations
   useEffect(() => {
     if (!globeRef.current) return;
     globeRef.current.arcsData(positions);
@@ -130,7 +114,6 @@ export const Globe = ({
     globeRef.current.ringColor(() => "rgba(255, 165, 0, 0.4)");
   }, [positions, defaultProps]);
 
-  // Render
   return (
     <Canvas
       camera={camera.current}
@@ -142,7 +125,6 @@ export const Globe = ({
     >
       <ambientLight intensity={0.5} />
       <pointLight position={[10, 10, 10]} intensity={0.8} />
-      <orbitControls args={[camera.current]} enableZoom enableRotate />
       <primitive ref={globeRef} object={new ThreeGlobe()} />
     </Canvas>
   );

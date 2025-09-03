@@ -176,7 +176,10 @@ const ShaderMaterial = ({
   });
 
   const preparedUniforms = useMemo(() => {
-    const result: Record<string, { value: any }> = {
+    const result: Record<
+      string,
+      { value: number | number[] | number[][] | THREE.Vector2 | THREE.Vector3[] }
+    > = {
       u_time: { value: 0 },
       u_resolution: {
         value: new THREE.Vector2(size.width * 2, size.height * 2),
@@ -197,7 +200,9 @@ const ShaderMaterial = ({
           break;
         case "uniform3fv":
           result[key] = {
-            value: (uniform.value as number[][]).map((v) => new THREE.Vector3(...v)),
+            value: (uniform.value as number[][]).map(
+              (v) => new THREE.Vector3(...v)
+            ),
           };
           break;
         default:
