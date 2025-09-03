@@ -92,7 +92,7 @@ const DotMatrix: React.FC<DotMatrixProps> = ({
     };
   }, [colors, opacities, totalSize, dotSize]);
 
-  const shaderSource = `
+  const shaderSource = `#version 300 es
     precision mediump float;
     in vec2 fragCoord;
 
@@ -160,22 +160,22 @@ const ShaderMaterial = ({
 }) => {
   const { size } = useThree();
   const ref = useRef<THREE.Mesh>(null!);
-  let lastFrameTime = 0;
+  const lastFrameTimeRef = useRef(0);
 
   useFrame(({ clock }) => {
     if (!ref.current) return;
 
     const now = clock.getElapsedTime();
-    if (now - lastFrameTime < 1 / maxFps) return;
+    if (now - lastFrameTimeRef.current < 1 / maxFps) return;
 
-    lastFrameTime = now;
+    lastFrameTimeRef.current = now;
     const material = ref.current.material as THREE.ShaderMaterial;
     if (material.uniforms.u_time) {
       material.uniforms.u_time.value = now;
     }
   });
 
-  const preparedUniforms: Record<string, { value: any }> = useMemo(() => {
+  const preparedUniforms = useMemo(() => {
     const result: Record<string, { value: any }> = {
       u_time: { value: 0 },
       u_resolution: {
@@ -201,6 +201,7 @@ const ShaderMaterial = ({
           };
           break;
         default:
+          // eslint-disable-next-line no-console
           console.warn(`Unsupported uniform type: ${uniform.type}`);
       }
     }
@@ -210,18 +211,16 @@ const ShaderMaterial = ({
 
   const material = useMemo(() => {
     return new THREE.ShaderMaterial({
-      vertexShader: `
+      vertexShader: `#version 300 es
         precision mediump float;
-        in vec2 coordinates;
+        in vec3 position;
         uniform vec2 u_resolution;
         out vec2 fragCoord;
 
         void main() {
-          float x = position.x;
-          float y = position.y;
-          gl_Position = vec4(x, y, 0.0, 1.0);
           fragCoord = (position.xy + vec2(1.0)) * 0.5 * u_resolution;
           fragCoord.y = u_resolution.y - fragCoord.y;
+          gl_Position = vec4(position, 1.0);
         }
       `,
       fragmentShader: source,
