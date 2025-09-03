@@ -20,6 +20,20 @@ interface BackgroundGradientAnimationProps {
   containerClassName?: string;
 }
 
+// Extend React.CSSProperties to include your CSS variables
+interface CustomCSSProperties extends React.CSSProperties {
+  "--gradient-background-start"?: string;
+  "--gradient-background-end"?: string;
+  "--first-color"?: string;
+  "--second-color"?: string;
+  "--third-color"?: string;
+  "--fourth-color"?: string;
+  "--fifth-color"?: string;
+  "--pointer-color"?: string;
+  "--size"?: string;
+  "--blending-value"?: string;
+}
+
 export const BackgroundGradientAnimation = ({
   gradientBackgroundStart = "rgb(108, 0, 162)",
   gradientBackgroundEnd = "rgb(0, 17, 82)",
@@ -68,14 +82,8 @@ export const BackgroundGradientAnimation = ({
     setIsSafari(/^((?!chrome|android).)*safari/i.test(navigator.userAgent));
   }, []);
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    target.current.x = e.clientX - rect.left;
-    target.current.y = e.clientY - rect.top;
-  };
-
-  // CSS variables without `as any`
-  const styleVars: React.CSSProperties = {
+  // CSS variables typed correctly
+  const styleVars: CustomCSSProperties = {
     "--gradient-background-start": gradientBackgroundStart,
     "--gradient-background-end": gradientBackgroundEnd,
     "--first-color": firstColor,
@@ -121,7 +129,11 @@ export const BackgroundGradientAnimation = ({
           "gradients-container h-full w-full blur-lg",
           isSafari ? "blur-2xl" : "[filter:url(#blurMe)_blur(40px)]"
         )}
-        onMouseMove={interactive ? handleMouseMove : undefined}
+        onMouseMove={interactive ? (e) => {
+          const rect = e.currentTarget.getBoundingClientRect();
+          target.current.x = e.clientX - rect.left;
+          target.current.y = e.clientY - rect.top;
+        } : undefined}
       >
         {[
           { color: "first-color", animate: "first", origin: "center center" },
