@@ -6,12 +6,13 @@ import ThreeGlobe from "three-globe";
 import { Canvas, extend } from "@react-three/fiber";
 import countries from "@/data/globe.json";
 
-// Extend ThreeGlobe for R3F
+
 declare module "@react-three/fiber" {
   interface ThreeElements {
-    threeGlobe: React.ElementType;
+    threeGlobe: JSX.IntrinsicElements["mesh"]; 
   }
 }
+
 extend({ ThreeGlobe });
 
 const RING_PROPAGATION_SPEED = 3;
@@ -49,7 +50,6 @@ export type GlobeConfig = {
 export const Globe = ({
   positions,
   globeConfig = {},
-  // Removed unused prop showGrid
 }: {
   positions: Position[];
   globeConfig?: GlobeConfig;
@@ -57,24 +57,27 @@ export const Globe = ({
   const globeRef = useRef<ThreeGlobe>(null);
   const camera = useRef<PerspectiveCamera>(new PerspectiveCamera(75, aspect, 1, 1000));
 
-  const defaultProps = useMemo(() => ({
-    pointSize: 1,
-    atmosphereColor: "#ffffff",
-    showAtmosphere: true,
-    atmosphereAltitude: 0.1,
-    polygonColor: "rgba(255,255,255,0.7)",
-    globeColor: "#1d072e",
-    emissive: "#000000",
-    emissiveIntensity: 0.1,
-    shininess: 0.9,
-    arcTime: 2000,
-    arcLength: 0.9,
-    rings: 1,
-    maxRings: 3,
-    ringSpeed: 1,
-    ringPropagationSpeed: RING_PROPAGATION_SPEED,
-    ...globeConfig,
-  }), [globeConfig]);
+  const defaultProps = useMemo(
+    () => ({
+      pointSize: 1,
+      atmosphereColor: "#ffffff",
+      showAtmosphere: true,
+      atmosphereAltitude: 0.1,
+      polygonColor: "rgba(255,255,255,0.7)",
+      globeColor: "#1d072e",
+      emissive: "#000000",
+      emissiveIntensity: 0.1,
+      shininess: 0.9,
+      arcTime: 2000,
+      arcLength: 0.9,
+      rings: 1,
+      maxRings: 3,
+      ringSpeed: 1,
+      ringPropagationSpeed: RING_PROPAGATION_SPEED,
+      ...globeConfig,
+    }),
+    [globeConfig]
+  );
 
   useEffect(() => {
     camera.current.position.z = cameraZ;
