@@ -1,5 +1,6 @@
 "use client";
-import React, { useRef } from "react";
+
+import React, { useRef, ElementType } from "react";
 import {
   motion,
   useAnimationFrame,
@@ -7,18 +8,32 @@ import {
   useMotionValue,
   useTransform,
 } from "framer-motion";
-import { cn } from "@/lib/utils"; // Your classNames utility
+import { cn } from "@/lib/utils";
+
+// -----------------------
+// Types
+// -----------------------
 
 type ButtonProps = {
   borderRadius?: string;
   children: React.ReactNode;
-  as?: React.ElementType;
+  as?: ElementType;
   containerClassName?: string;
   borderClassName?: string;
   duration?: number;
   className?: string;
-  [key: string]: any;
-};
+} & React.HTMLAttributes<HTMLElement>;
+
+type MovingBorderProps = {
+  children: React.ReactNode;
+  duration?: number;
+  rx?: string;
+  ry?: string;
+} & React.SVGProps<SVGSVGElement>;
+
+// -----------------------
+// Button Component
+// -----------------------
 
 export function Button({
   borderRadius = "1.75rem",
@@ -70,13 +85,9 @@ export function Button({
   );
 }
 
-type MovingBorderProps = {
-  children: React.ReactNode;
-  duration?: number;
-  rx?: string;
-  ry?: string;
-  [key: string]: any;
-};
+// -----------------------
+// Moving Border Component
+// -----------------------
 
 export const MovingBorder = ({
   children,
@@ -103,7 +114,12 @@ export const MovingBorder = ({
     pathRef.current ? pathRef.current.getPointAtLength(val).y : 0
   );
 
-  const transform = useMotionTemplate`translateX(${x}px) translateY(${y}px) translateX(-50%) translateY(-50%)`;
+  const transform = useMotionTemplate`
+    translateX(${x}px)
+    translateY(${y}px)
+    translateX(-50%)
+    translateY(-50%)
+  `;
 
   return (
     <>

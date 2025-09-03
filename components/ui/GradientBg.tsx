@@ -1,6 +1,24 @@
 "use client";
+
 import { cn } from "@/lib/utils";
 import { useEffect, useRef, useState } from "react";
+
+interface BackgroundGradientAnimationProps {
+  gradientBackgroundStart?: string;
+  gradientBackgroundEnd?: string;
+  firstColor?: string;
+  secondColor?: string;
+  thirdColor?: string;
+  fourthColor?: string;
+  fifthColor?: string;
+  pointerColor?: string;
+  size?: string;
+  blendingValue?: string;
+  children?: React.ReactNode;
+  className?: string;
+  interactive?: boolean;
+  containerClassName?: string;
+}
 
 export const BackgroundGradientAnimation = ({
   gradientBackgroundStart = "rgb(108, 0, 162)",
@@ -17,103 +35,74 @@ export const BackgroundGradientAnimation = ({
   className,
   interactive = true,
   containerClassName,
-}: {
-  gradientBackgroundStart?: string;
-  gradientBackgroundEnd?: string;
-  firstColor?: string;
-  secondColor?: string;
-  thirdColor?: string;
-  fourthColor?: string;
-  fifthColor?: string;
-  pointerColor?: string;
-  size?: string;
-  blendingValue?: string;
-  children?: React.ReactNode;
-  className?: string;
-  interactive?: boolean;
-  containerClassName?: string;
-}) => {
+}: BackgroundGradientAnimationProps) => {
   const interactiveRef = useRef<HTMLDivElement>(null);
+  const [isSafari, setIsSafari] = useState(false);
 
-  const [curX, setCurX] = useState(0);
-  const [curY, setCurY] = useState(0);
-  const [tgX, setTgX] = useState(0);
-  const [tgY, setTgY] = useState(0);
+  const [coords, setCoords] = useState({ x: 0, y: 0 });
+  const target = useRef({ x: 0, y: 0 });
 
-  // Set CSS variables once on mount
-  useEffect(() => {
-    document.body.style.setProperty("--gradient-background-start", gradientBackgroundStart);
-    document.body.style.setProperty("--gradient-background-end", gradientBackgroundEnd);
-    document.body.style.setProperty("--first-color", firstColor);
-    document.body.style.setProperty("--second-color", secondColor);
-    document.body.style.setProperty("--third-color", thirdColor);
-    document.body.style.setProperty("--fourth-color", fourthColor);
-    document.body.style.setProperty("--fifth-color", fifthColor);
-    document.body.style.setProperty("--pointer-color", pointerColor);
-    document.body.style.setProperty("--size", size);
-    document.body.style.setProperty("--blending-value", blendingValue);
-  }, [
-    gradientBackgroundStart,
-    gradientBackgroundEnd,
-    firstColor,
-    secondColor,
-    thirdColor,
-    fourthColor,
-    fifthColor,
-    pointerColor,
-    size,
-    blendingValue,
-  ]);
-
-  // Smoothly animate current position toward target position
+  // Update pointer position smoothly
   useEffect(() => {
     let animationFrameId: number;
 
-    function animate() {
-      setCurX((prevCurX) => {
-        const nextX = prevCurX + (tgX - prevCurX) / 20;
-        if (interactiveRef.current) {
-          interactiveRef.current.style.transform = `translate(${Math.round(nextX)}px, ${Math.round(curY)}px)`;
-        }
-        return nextX;
-      });
+    const animate = () => {
+      setCoords(prev => {
+        const nextX = prev.x + (target.current.x - prev.x) / 20;
+        const nextY = prev.y + (target.current.y - prev.y) / 20;
 
-      setCurY((prevCurY) => {
-        const nextY = prevCurY + (tgY - prevCurY) / 20;
-        // We update transform on curX update above, so no need here to update again
-        return nextY;
+        if (interactiveRef.current) {
+          interactiveRef.current.style.transform = `translate(${Math.round(
+            nextX
+          )}px, ${Math.round(nextY)}px)`;
+        }
+
+        return { x: nextX, y: nextY };
       });
 
       animationFrameId = requestAnimationFrame(animate);
-    }
+    };
 
     animate();
 
     return () => cancelAnimationFrame(animationFrameId);
-  }, [tgX, tgY, curY]);
+  }, []);
 
-  // Mouse move handler to update target positions
-  const handleMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (interactiveRef.current) {
-      const rect = interactiveRef.current.getBoundingClientRect();
-      setTgX(event.clientX - rect.left);
-      setTgY(event.clientY - rect.top);
-    }
-  };
-
-  // Detect Safari browser for special blur styles
-  const [isSafari, setIsSafari] = useState(false);
+  // Safari detection
   useEffect(() => {
     setIsSafari(/^((?!chrome|android).)*safari/i.test(navigator.userAgent));
   }, []);
 
+  // Pointer tracking
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    target.current.x = e.clientX - rect.left;
+    target.current.y = e.clientY - rect.top;
+  };
+
+  // Define CSS variables for dynamic styling
+  const styleVars: React.CSSProperties = {
+    ["--gradient-background-start" as any]: gradientBackgroundStart,
+    ["--gradient-background-end" as any]: gradientBackgroundEnd,
+    ["--first-color" as any]: firstColor,
+    ["--second-color" as any]: secondColor,
+    ["--third-color" as any]: thirdColor,
+    ["--fourth-color" as any]: fourthColor,
+    ["--fifth-color" as any]: fifthColor,
+    ["--pointer-color" as any]: pointerColor,
+    ["--size" as any]: size,
+    ["--blending-value" as any]: blendingValue,
+  };
+
   return (
     <div
+      style={styleVars}
       className={cn(
         "w-full h-full absolute overflow-hidden top-0 left-0 bg-[linear-gradient(40deg,var(--gradient-background-start),var(--gradient-background-end))]",
         containerClassName
       )}
     >
+      {/* Gooey filter */}
       <svg className="hidden">
         <defs>
           <filter id="blurMe">
@@ -128,69 +117,52 @@ export const BackgroundGradientAnimation = ({
           </filter>
         </defs>
       </svg>
+
+      {/* Content Layer */}
       <div className={cn("", className)}>{children}</div>
+
+      {/* Gradients Layer */}
       <div
         className={cn(
           "gradients-container h-full w-full blur-lg",
           isSafari ? "blur-2xl" : "[filter:url(#blurMe)_blur(40px)]"
         )}
+        onMouseMove={interactive ? handleMouseMove : undefined}
       >
-        <div
-          className={cn(
-            `absolute [background:radial-gradient(circle_at_center,_var(--first-color)_0,_var(--first-color)_50%)_no-repeat]`,
-            `[mix-blend-mode:var(--blending-value)] w-[var(--size)] h-[var(--size)] top-[calc(50%-var(--size)/2)] left-[calc(50%-var(--size)/2)]`,
-            `[transform-origin:center_center]`,
-            `animate-first`,
-            `opacity-100`
-          )}
-        ></div>
-        <div
-          className={cn(
-            `absolute [background:radial-gradient(circle_at_center,_rgba(var(--second-color),_0.8)_0,_rgba(var(--second-color),_0)_50%)_no-repeat]`,
-            `[mix-blend-mode:var(--blending-value)] w-[var(--size)] h-[var(--size)] top-[calc(50%-var(--size)/2)] left-[calc(50%-var(--size)/2)]`,
-            `[transform-origin:calc(50%-400px)]`,
-            `animate-second`,
-            `opacity-100`
-          )}
-        ></div>
-        <div
-          className={cn(
-            `absolute [background:radial-gradient(circle_at_center,_rgba(var(--third-color),_0.8)_0,_rgba(var(--third-color),_0)_50%)_no-repeat]`,
-            `[mix-blend-mode:var(--blending-value)] w-[var(--size)] h-[var(--size)] top-[calc(50%-var(--size)/2)] left-[calc(50%-var(--size)/2)]`,
-            `[transform-origin:calc(50%+400px)]`,
-            `animate-third`,
-            `opacity-100`
-          )}
-        ></div>
-        <div
-          className={cn(
-            `absolute [background:radial-gradient(circle_at_center,_rgba(var(--fourth-color),_0.8)_0,_rgba(var(--fourth-color),_0)_50%)_no-repeat]`,
-            `[mix-blend-mode:var(--blending-value)] w-[var(--size)] h-[var(--size)] top-[calc(50%-var(--size)/2)] left-[calc(50%-var(--size)/2)]`,
-            `[transform-origin:calc(50%-200px)]`,
-            `animate-fourth`,
-            `opacity-70`
-          )}
-        ></div>
-        <div
-          className={cn(
-            `absolute [background:radial-gradient(circle_at_center,_rgba(var(--fifth-color),_0.8)_0,_rgba(var(--fifth-color),_0)_50%)_no-repeat]`,
-            `[mix-blend-mode:var(--blending-value)] w-[var(--size)] h-[var(--size)] top-[calc(50%-var(--size)/2)] left-[calc(50%-var(--size)/2)]`,
-            `[transform-origin:calc(50%-800px)_calc(50%+800px)]`,
-            `animate-fifth`,
-            `opacity-100`
-          )}
-        ></div>
+        {[
+          { color: "first-color", animate: "first", origin: "center center" },
+          { color: "second-color", animate: "second", origin: "calc(50%-400px)" },
+          { color: "third-color", animate: "third", origin: "calc(50%+400px)" },
+          { color: "fourth-color", animate: "fourth", origin: "calc(50%-200px)" },
+          {
+            color: "fifth-color",
+            animate: "fifth",
+            origin: "calc(50%-800px) calc(50%+800px)",
+          },
+        ].map(({ color, animate, origin }, i) => (
+          <div
+            key={i}
+            className={cn(
+              "absolute",
+              `w-[var(--size)] h-[var(--size)]`,
+              "top-[calc(50%-var(--size)/2)] left-[calc(50%-var(--size)/2)]",
+              `opacity-100 animate-${animate}`,
+              `[background:radial-gradient(circle_at_center,_rgba(var(--${color}),_0.8)_0,_rgba(var(--${color}),_0)_50%)]`,
+              `[mix-blend-mode:var(--blending-value)]`,
+              `[transform-origin:${origin}]`
+            )}
+          ></div>
+        ))}
 
         {interactive && (
           <div
             ref={interactiveRef}
-            onMouseMove={handleMouseMove}
             className={cn(
-              `absolute [background:radial-gradient(circle_at_center,_rgba(var(--pointer-color),_0.8)_0,_rgba(var(--pointer-color),_0)_50%)_no-repeat]`,
-              `[mix-blend-mode:var(--blending-value)] w-full h-full -top-1/2 -left-1/2`,
-              `opacity-70`
+              "absolute opacity-70 w-full h-full -top-1/2 -left-1/2",
+              `[background:radial-gradient(circle_at_center,_rgba(var(--pointer-color),_0.8)_0,_rgba(var(--pointer-color),_0)_50%)]`,
+              `[mix-blend-mode:var(--blending-value)]`
             )}
-          ></div>
+          />
         )}
       </div>
     </div>

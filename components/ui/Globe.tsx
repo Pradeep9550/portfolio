@@ -1,12 +1,19 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Color, Scene, Fog, PerspectiveCamera, Vector3 } from "three";
+import { useEffect, useRef, useState, useCallback } from "react";
+import {
+  Color,
+  Scene,
+  Fog,
+  PerspectiveCamera,
+  Vector3,
+} from "three";
 import ThreeGlobe from "three-globe";
 import { useThree, Object3DNode, Canvas, extend } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import countries from "@/data/globe.json";
 
+// Extend Three.js with ThreeGlobe for R3F
 declare module "@react-three/fiber" {
   interface ThreeElements {
     threeGlobe: Object3DNode<ThreeGlobe, typeof ThreeGlobe>;
@@ -62,16 +69,13 @@ interface WorldProps {
 let numbersOfRings: number[] = [0];
 
 export function Globe({ globeConfig, data }: WorldProps) {
-  const [globeData, setGlobeData] = useState<
-    | {
-        size: number;
-        order: number;
-        color: (t: number) => string;
-        lat: number;
-        lng: number;
-      }[]
-    | null
-  >(null);
+  const [globeData, setGlobeData] = useState<{
+    size: number;
+    order: number;
+    color: (t: number) => string;
+    lat: number;
+    lng: number;
+  }[] | null>(null);
 
   const globeRef = useRef<ThreeGlobe | null>(null);
 
@@ -92,7 +96,7 @@ export function Globe({ globeConfig, data }: WorldProps) {
     ...globeConfig,
   };
 
-  const _buildMaterial = () => {
+  const _buildMaterial = useCallback(() => {
     if (!globeRef.current) return;
 
     const globeMaterial = globeRef.current.globeMaterial() as unknown as {
@@ -106,89 +110,83 @@ export function Globe({ globeConfig, data }: WorldProps) {
     globeMaterial.emissive = new Color(defaultProps.emissive);
     globeMaterial.emissiveIntensity = defaultProps.emissiveIntensity ?? 0.1;
     globeMaterial.shininess = defaultProps.shininess ?? 0.9;
-  };
+  }, [defaultProps]);
 
-  const _buildData = () => {
+  const _buildData = useCallback(() => {
     const arcs = data;
-    const points: {
-      size: number;
-      order: number;
-      color: (t: number) => string;
-      lat: number;
-      lng: number;
-    }[] = [];
-
-    for (let i = 0; i < arcs.length; i++) {
-      const arc = arcs[i];
+    const points = arcs.flatMap((arc) => {
       const rgb = hexToRgb(arc.color);
-      if (!rgb) continue;
+      if (!rgb) return [];
 
-      points.push({
-        size: defaultProps.pointSize!,
-        order: arc.order,
-        color: (t: number) => `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${1 - t})`,
-        lat: arc.startLat,
-        lng: arc.startLng,
-      });
+      const colorFn = (t: number) =>
+        `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${1 - t})`;
 
-      points.push({
-        size: defaultProps.pointSize!,
-        order: arc.order,
-        color: (t: number) => `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${1 - t})`,
-        lat: arc.endLat,
-        lng: arc.endLng,
-      });
-    }
+      return [
+        {
+          size: defaultProps.pointSize!,
+          order: arc.order,
+          color: colorFn,
+          lat: arc.startLat,
+          lng: arc.startLng,
+        },
+        {
+          size: defaultProps.pointSize!,
+          order: arc.order,
+          color: colorFn,
+          lat: arc.endLat,
+          lng: arc.endLng,
+        },
+      ];
+    });
 
     const filteredPoints = points.filter(
       (v, i, a) => a.findIndex(v2 => v2.lat === v.lat && v2.lng === v.lng) === i
     );
 
     setGlobeData(filteredPoints);
-  };
+  }, [data, defaultProps.pointSize]);
 
-  const startAnimation = () => {
+  const startAnimation = useCallback(() => {
     if (!globeRef.current || !globeData) return;
 
     globeRef.current
       .arcsData(data)
-      .arcStartLat((d: Position) => d.startLat)
-      .arcStartLng((d: Position) => d.startLng)
-      .arcEndLat((d: Position) => d.endLat)
-      .arcEndLng((d: Position) => d.endLng)
-      .arcColor((e: Position) => e.color)
-      .arcAltitude((e: Position) => e.arcAlt)
+      .arcStartLat((d) => d.startLat)
+      .arcStartLng((d) => d.startLng)
+      .arcEndLat((d) => d.endLat)
+      .arcEndLng((d) => d.endLng)
+      .arcColor((e) => e.color)
+      .arcAltitude((e) => e.arcAlt)
       .arcStroke(() => [0.32, 0.28, 0.3][Math.floor(Math.random() * 3)])
       .arcDashLength(defaultProps.arcLength)
-      .arcDashInitialGap((e: Position) => e.order)
+      .arcDashInitialGap((e) => e.order)
       .arcDashGap(15)
       .arcDashAnimateTime(() => defaultProps.arcTime);
 
     globeRef.current
       .pointsData(data)
-      .pointColor((e: Position) => e.color)
+      .pointColor((e) => e.color)
       .pointsMerge(true)
       .pointAltitude(0)
       .pointRadius(2);
 
     globeRef.current
-      // ringsData expects array of objects like globeData entries
       .ringsData([])
-      .ringColor((e: { color: (t: number) => string }) => (t: number) => e.color(t))
+      .ringColor((e) => (t: number) => e.color(t))
       .ringMaxRadius(defaultProps.maxRings)
       .ringPropagationSpeed(RING_PROPAGATION_SPEED)
       .ringRepeatPeriod(
         (defaultProps.arcTime * defaultProps.arcLength) / defaultProps.rings
       );
-  };
+  }, [data, defaultProps, globeData]);
 
+  // Build material and data when data/config change
   useEffect(() => {
-    if (globeRef.current) {
-      _buildData();
-      _buildMaterial();
-    }
-  }, [globeConfig, data]);
+    _buildData();
+    _buildMaterial();
+  }, [_buildData, _buildMaterial]);
 
+  // Apply hex polygon, atmosphere, and arcs
   useEffect(() => {
     if (globeRef.current && globeData) {
       globeRef.current
@@ -202,15 +200,17 @@ export function Globe({ globeConfig, data }: WorldProps) {
 
       startAnimation();
     }
-  }, [globeData, data, defaultProps]);
+  }, [globeData, defaultProps, startAnimation]);
 
+  // Animate rings
   useEffect(() => {
     if (!globeRef.current || !globeData) return;
 
-    // Added data.length to deps to silence hook warning, it's stable for your use
     const interval = setInterval(() => {
       numbersOfRings = genRandomNumbers(0, data.length, Math.floor((data.length * 4) / 5));
-      globeRef.current!.ringsData(globeData.filter((_, i) => numbersOfRings.includes(i)));
+      globeRef.current!.ringsData(
+        globeData.filter((_, i) => numbersOfRings.includes(i))
+      );
     }, 2000);
 
     return () => clearInterval(interval);

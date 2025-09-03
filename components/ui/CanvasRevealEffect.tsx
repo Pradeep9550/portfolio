@@ -28,7 +28,7 @@ export const CanvasRevealEffect = ({
           colors={colors}
           dotSize={dotSize ?? 3}
           opacities={opacities}
-          shader={`
+          shader={` 
             float animation_speed_factor = ${animationSpeed.toFixed(1)};
             float intro_offset = distance(u_resolution / 2.0 / u_total_size, st2) * 0.01 + (random(st2) * 0.15);
             opacity *= step(intro_offset, u_time * animation_speed_factor);
@@ -62,37 +62,19 @@ const DotMatrix: React.FC<DotMatrixProps> = ({
   center = ["x", "y"],
 }) => {
   const uniforms = useMemo(() => {
-    let colorsArray: number[][] = [];
+    let colorsArray: number[][];
 
     if (colors.length === 2) {
-      colorsArray = [
-        colors[0],
-        colors[0],
-        colors[0],
-        colors[1],
-        colors[1],
-        colors[1],
-      ];
+      colorsArray = [colors[0], colors[0], colors[0], colors[1], colors[1], colors[1]];
     } else if (colors.length === 3) {
-      colorsArray = [
-        colors[0],
-        colors[0],
-        colors[1],
-        colors[1],
-        colors[2],
-        colors[2],
-      ];
+      colorsArray = [colors[0], colors[0], colors[1], colors[1], colors[2], colors[2]];
     } else {
       colorsArray = Array(6).fill(colors[0]);
     }
 
     return {
       u_colors: {
-        value: colorsArray.map(([r, g, b]) => [
-          r / 255,
-          g / 255,
-          b / 255,
-        ]),
+        value: colorsArray.map(([r, g, b]) => [r / 255, g / 255, b / 255]),
         type: "uniform3fv",
       },
       u_opacities: {
@@ -129,10 +111,6 @@ const DotMatrix: React.FC<DotMatrixProps> = ({
       return fract(tan(distance(xy * PHI, xy) * 0.5) * xy.x);
     }
 
-    float map(float value, float min1, float max1, float min2, float max2) {
-      return min2 + (value - min1) * (max2 - min2) / (max1 - min1);
-    }
-
     void main() {
       vec2 st = fragCoord.xy;
       ${center.includes("x") ? "st.x -= abs(floor((mod(u_resolution.x, u_total_size) - u_dot_size) * 0.5));" : ""}
@@ -142,7 +120,6 @@ const DotMatrix: React.FC<DotMatrixProps> = ({
       opacity *= step(0.0, st.y);
 
       vec2 st2 = vec2(int(st.x / u_total_size), int(st.y / u_total_size));
-
       float frequency = 5.0;
       float show_offset = random(st2);
       float rand = random(st2 * floor((u_time / frequency) + show_offset + frequency) + 1.0);
@@ -163,9 +140,11 @@ const DotMatrix: React.FC<DotMatrixProps> = ({
   return <Shader source={shaderSource} uniforms={uniforms} maxFps={60} />;
 };
 
+// ---------------- Shader Rendering System ----------------
+
 interface Uniforms {
   [key: string]: {
-    value: number[] | number[][] | number;
+    value: number | number[] | number[][] | THREE.Vector2 | THREE.Vector3[];
     type: string;
   };
 }
@@ -190,11 +169,14 @@ const ShaderMaterial = ({
     if (now - lastFrameTime < 1 / maxFps) return;
 
     lastFrameTime = now;
-    (ref.current.material as THREE.ShaderMaterial).uniforms.u_time.value = now;
+    const material = ref.current.material as THREE.ShaderMaterial;
+    if (material.uniforms.u_time) {
+      material.uniforms.u_time.value = now;
+    }
   });
 
-  const preparedUniforms = useMemo(() => {
-    const result: any = {
+  const preparedUniforms: Record<string, { value: any }> = useMemo(() => {
+    const result: Record<string, { value: any }> = {
       u_time: { value: 0 },
       u_resolution: {
         value: new THREE.Vector2(size.width * 2, size.height * 2),
@@ -203,11 +185,8 @@ const ShaderMaterial = ({
 
     for (const key in uniforms) {
       const uniform = uniforms[key];
-
       switch (uniform.type) {
         case "uniform1f":
-          result[key] = { value: uniform.value };
-          break;
         case "uniform1fv":
           result[key] = { value: uniform.value };
           break;
@@ -218,14 +197,11 @@ const ShaderMaterial = ({
           break;
         case "uniform3fv":
           result[key] = {
-            value: (uniform.value as number[][]).map(
-              (v) => new THREE.Vector3(...v)
-            ),
+            value: (uniform.value as number[][]).map((v) => new THREE.Vector3(...v)),
           };
           break;
         default:
           console.warn(`Unsupported uniform type: ${uniform.type}`);
-          break;
       }
     }
 
