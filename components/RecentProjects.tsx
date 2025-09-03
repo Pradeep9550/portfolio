@@ -1,10 +1,10 @@
 "use client";
 
+import Image from "next/image"; // Import Next.js Image
 import { FaLocationArrow } from "react-icons/fa6";
 
 import { projects } from "@/data";
 import { PinContainer } from "./ui/Pin";
-
 
 const RecentProjects = () => {
   return (
@@ -19,18 +19,26 @@ const RecentProjects = () => {
             className="lg:min-h-[32.5rem] h-[25rem] flex items-center justify-center sm:w-96 w-[80vw]"
             key={item.id}
           >
-            <PinContainer
-            >
+            <PinContainer>
               <div className="relative flex items-center justify-center sm:w-96 w-[80vw] overflow-hidden h-[20vh] lg:h-[30vh] mb-10">
                 <div
                   className="relative w-full h-full overflow-hidden lg:rounded-3xl"
                   style={{ backgroundColor: "#13162D" }}
                 >
-                  <img src="/bg.png" alt="bgimg" />
+                  <Image
+                    src="/bg.png"
+                    alt="bgimg"
+                    fill
+                    style={{ objectFit: "cover" }}
+                    priority
+                  />
                 </div>
-                <img
+
+                <Image
                   src={item.img}
                   alt="cover"
+                  width={384} // sm:w-96 = 24rem = 384px
+                  height={150} // approx height, adjust if needed
                   className="z-10 absolute bottom-0"
                 />
               </div>
@@ -59,7 +67,13 @@ const RecentProjects = () => {
                         transform: `translateX(-${5 * index + 2}px)`,
                       }}
                     >
-                      <img src={icon} alt="icon5" className="p-2" />
+                      <Image
+                        src={icon}
+                        alt={`icon${index}`}
+                        width={32}
+                        height={32}
+                        className="p-2"
+                      />
                     </div>
                   ))}
                 </div>

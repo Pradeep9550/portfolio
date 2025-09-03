@@ -39,26 +39,22 @@ export const BackgroundGradientAnimation = ({
   const interactiveRef = useRef<HTMLDivElement>(null);
   const [isSafari, setIsSafari] = useState(false);
 
-  const [coords, setCoords] = useState({ x: 0, y: 0 });
+  // Use ref for smooth animation coordinates (avoid unused var warning & re-renders)
+  const coords = useRef({ x: 0, y: 0 });
   const target = useRef({ x: 0, y: 0 });
 
-  // Update pointer position smoothly
   useEffect(() => {
     let animationFrameId: number;
 
     const animate = () => {
-      setCoords(prev => {
-        const nextX = prev.x + (target.current.x - prev.x) / 20;
-        const nextY = prev.y + (target.current.y - prev.y) / 20;
+      coords.current.x += (target.current.x - coords.current.x) / 20;
+      coords.current.y += (target.current.y - coords.current.y) / 20;
 
-        if (interactiveRef.current) {
-          interactiveRef.current.style.transform = `translate(${Math.round(
-            nextX
-          )}px, ${Math.round(nextY)}px)`;
-        }
-
-        return { x: nextX, y: nextY };
-      });
+      if (interactiveRef.current) {
+        interactiveRef.current.style.transform = `translate(${Math.round(
+          coords.current.x
+        )}px, ${Math.round(coords.current.y)}px)`;
+      }
 
       animationFrameId = requestAnimationFrame(animate);
     };
@@ -68,30 +64,28 @@ export const BackgroundGradientAnimation = ({
     return () => cancelAnimationFrame(animationFrameId);
   }, []);
 
-  // Safari detection
   useEffect(() => {
     setIsSafari(/^((?!chrome|android).)*safari/i.test(navigator.userAgent));
   }, []);
 
-  // Pointer tracking
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     target.current.x = e.clientX - rect.left;
     target.current.y = e.clientY - rect.top;
   };
 
-  // Define CSS variables for dynamic styling
+  // CSS variables without `as any`
   const styleVars: React.CSSProperties = {
-    ["--gradient-background-start" as any]: gradientBackgroundStart,
-    ["--gradient-background-end" as any]: gradientBackgroundEnd,
-    ["--first-color" as any]: firstColor,
-    ["--second-color" as any]: secondColor,
-    ["--third-color" as any]: thirdColor,
-    ["--fourth-color" as any]: fourthColor,
-    ["--fifth-color" as any]: fifthColor,
-    ["--pointer-color" as any]: pointerColor,
-    ["--size" as any]: size,
-    ["--blending-value" as any]: blendingValue,
+    "--gradient-background-start": gradientBackgroundStart,
+    "--gradient-background-end": gradientBackgroundEnd,
+    "--first-color": firstColor,
+    "--second-color": secondColor,
+    "--third-color": thirdColor,
+    "--fourth-color": fourthColor,
+    "--fifth-color": fifthColor,
+    "--pointer-color": pointerColor,
+    "--size": size,
+    "--blending-value": blendingValue,
   };
 
   return (
@@ -118,10 +112,10 @@ export const BackgroundGradientAnimation = ({
         </defs>
       </svg>
 
-      {/* Content Layer */}
+      {/* Content */}
       <div className={cn("", className)}>{children}</div>
 
-      {/* Gradients Layer */}
+      {/* Gradients */}
       <div
         className={cn(
           "gradients-container h-full w-full blur-lg",

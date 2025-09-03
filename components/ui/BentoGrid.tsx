@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image"; // Import Next.js Image
 import { IoCopyOutline } from "react-icons/io5";
 import Lottie from "react-lottie";
 
@@ -82,14 +83,18 @@ export const BentoGridItem = ({
           "linear-gradient(90deg, rgba(4,7,29,1) 0%, rgba(12,14,35,1) 100%)",
       }}
     >
-      <div className={`${id === 6 ? "flex justify-center" : ""} h-full`}>
+      <div className={`${id === 6 ? "flex justify-center" : ""} h-full relative`}>
         {/* Main Image */}
         {img && (
-          <div className="w-full h-full absolute">
-            <img
+          <div className="w-full h-full absolute inset-0">
+            <Image
               src={img}
               alt="Main Image"
               className={cn(imgClassName, "object-cover object-center")}
+              fill
+              style={{ objectFit: "cover" }}
+              sizes="(max-width: 768px) 100vw, 50vw"
+              priority={id === 6}
             />
           </div>
         )}
@@ -101,10 +106,12 @@ export const BentoGridItem = ({
               "w-full opacity-80": id === 5,
             })}
           >
-            <img
+            <Image
               src={spareImg}
               alt="Spare"
-              className="object-cover object-center w-full h-full"
+              className="object-cover object-center"
+              fill
+              style={{ objectFit: "cover" }}
             />
           </div>
         )}
