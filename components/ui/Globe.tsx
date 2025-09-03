@@ -58,7 +58,7 @@ interface WorldProps {
   data: Position[];
 }
 
-const numbersOfRings = [0];
+let numbersOfRings = [0];
 
 export function Globe({ globeConfig, data }: WorldProps) {
   const [globeData, setGlobeData] = useState<
